@@ -28,8 +28,8 @@
   flex-grow: 1;
 }
 
-.title a {
-  color: #0070f3;
+.title span {
+  color: #44d8a7;
   text-decoration: none;
 }
 
@@ -88,8 +88,8 @@
 .card:hover,
 .card:focus,
 .card:active {
-  color: #0070f3;
-  border-color: #0070f3;
+  color: #44d8a7;
+  border-color: #44d8a7;
 }
 
 .card h2 {
@@ -106,6 +106,31 @@
 .logo {
   height: 1em;
   margin-left: 0.5rem;
+}
+
+.link a {
+  color: #44d8a7;
+  text-decoration: none;
+}
+
+.link a:hover,
+.link a:focus,
+.link a:active {
+  text-decoration: underline;
+}
+
+.drop {
+  border: 1px dotted #44d8a7;
+  border-radius: 5px;
+  padding: 1rem 1rem;
+}
+
+.drop:hover {
+  cursor: pointer;
+}
+
+.button{
+padding: 0.5rem 1rem;
 }
 
 @media (max-width: 600px) {
