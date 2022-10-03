@@ -129,8 +129,27 @@
   cursor: pointer;
 }
 
-.button{
+.button {
 padding: 0.5rem 1rem;
+}
+
+.connect {
+  padding:0.5rem 1rem;
+  margin: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.buttonConnect{
+  padding: 0.5rem 1rem;
+  background: #44d8a7;
+  border-radius: 5px;
+  border: none;
+}
+
+.buttonConnect:hover{
+  cursor: pointer;
 }
 
 @media (max-width: 600px) {
