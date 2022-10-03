@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Image from 'next/image';
-import { VideoPlayer, useAsset, useAssetMetrics, useCreateAsset } from '@livepeer/react';
+import { Player, useAsset, useAssetMetrics, useCreateAsset } from '@livepeer/react';
 import { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import BarLoader from 'react-spinners/BarLoader';
@@ -28,7 +28,7 @@ const Home: NextPage = () => {
     status: assetStatus,
   } = useAsset({
     assetId: createdAsset?.id,
-    refetchInterval: (asset) => (asset?.status?.phase !== 'ready' ? 5000 : false),
+    refetchInterval: (asset: any) => (asset?.status?.phase !== 'ready' ? 5000 : false),
   });
   const { data: metrics } = useAssetMetrics({
     assetId: createdAsset?.id,
@@ -142,7 +142,7 @@ const Home: NextPage = () => {
         {asset?.playbackId && (
           <div>
             <p>Preview</p>
-            <VideoPlayer playbackId={asset?.playbackId} autoPlay={false} muted width={300} />
+            <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
           </div>
         )}
         {/* {metrics?.metrics?.[0] && <p>Views: {metrics?.metrics?.[0]?.startViews}</p>} */}
