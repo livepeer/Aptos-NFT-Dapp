@@ -1,20 +1,40 @@
-import type { NextPage } from 'next';
 import Head from 'next/head';
-import Image from 'next/image';
-import { Player, useAsset, useAssetMetrics, useCreateAsset } from '@livepeer/react';
-import { useState, useCallback, useMemo } from 'react';
+import { Player, useAsset, useUpdateAsset, useCreateAsset, useAssetMetrics } from '@livepeer/react';
+import { useState, useCallback, useMemo, useContext } from 'react';
+import { useRouter } from 'next/router';
 import { useDropzone } from 'react-dropzone';
+// import { AptosContext } from '../core'
+import { Types } from 'aptos';
 import BarLoader from 'react-spinners/BarLoader';
 import styles from '../styles/Home.module.css';
+
+import { CreateAptosTokenBody, CreateAptosTokenResponse } from '../pages/api/create-aptos-token';
 
 declare global {
   interface Window {
     aptos: any;
   }
 }
+export default function Aptos() {
+  // const assetId = '89b4e676-ed4e-4caa-b8dc-c73050740961';
+  const [address, setAddress] = useState<string | null>(null);
+  const [video, setVideo] = useState<string | null>(null);
+  const [isCreatingNft, setIsCreatingNft] = useState(false);
+  const [creationHash, setCreationHash] = useState('');
 
-const Home: NextPage = () => {
-  const [video, setVideo] = useState<File | undefined>();
+  const router = useRouter();
+
+  // const aptosClient = useContext( AptosContext );
+
+  const isAptosDefined = useMemo(
+    () => (typeof window !== 'undefined' ? Boolean(window?.aptos) : false),
+    []
+  );
+
+  const assetId = useMemo(
+    () => (router?.query?.id ? String(router?.query?.id) : undefined),
+    [router?.query]
+  );
 
   const {
     mutate: createAsset,
@@ -22,24 +42,25 @@ const Home: NextPage = () => {
     status: createStatus,
     uploadProgress,
   } = useCreateAsset();
-  const {
-    data: asset,
-    error,
-    status: assetStatus,
-  } = useAsset({
-    assetId: createdAsset?.id,
-    refetchInterval: (asset: any) => (asset?.status?.phase !== 'ready' ? 5000 : false),
+
+  const { data: asset, status: assetStatus } = useAsset({
+    assetId,
+    enabled: assetId?.length === 36,
+    refetchInterval: (asset) => (asset?.storage?.status?.phase !== 'ready' ? 5000 : false),
   });
-  const { data: metrics } = useAssetMetrics({
-    assetId: createdAsset?.id,
-    refetchInterval: 30000,
-  });
+
+  const { mutate: updateAsset, status: updateStatus } = useUpdateAsset();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles && acceptedFiles.length > 0 && acceptedFiles?.[0]) {
       setVideo(acceptedFiles[0]);
     }
   }, []);
+
+  const { data: metrics } = useAssetMetrics({
+    assetId: createdAsset?.id,
+    refetchInterval: 30000,
+  });
 
   const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
     accept: {
@@ -67,40 +88,112 @@ const Home: NextPage = () => {
     [uploadProgress, asset?.status?.progress]
   );
 
+  const connectWallet = useCallback(async () => {
+    try {
+      if (isAptosDefined) {
+        await window.aptos.connect();
+        const account: { address: string } = await window.aptos.account();
+
+        setAddress(account.address);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAptosDefined]);
+
+  const mintNft = useCallback(async () => {
+    setIsCreatingNft(true);
+    try {
+      if (address && aptosClient && asset?.storage?.ipfs?.nftMetadata?.url) {
+        const body: CreateAptosTokenBody = {
+          receiver: address,
+          metadataUri: asset.storage.ipfs.nftMetadata.url,
+        };
+
+        const response = await fetch('/api/create-aptos-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        const json = (await response.json()) as CreateAptosTokenResponse;
+
+        if ((json as CreateAptosTokenResponse).tokenName) {
+          const createResponse = json as CreateAptosTokenResponse;
+
+          const transaction = {
+            type: 'entry_function_payload',
+            function: '0x3::token_transfers::claim_script',
+            arguments: [
+              createResponse.creator,
+              createResponse.creator,
+              createResponse.collectionName,
+              createResponse.tokenName,
+              createResponse.tokenPropertyVersion,
+            ],
+            type_arguments: [],
+          };
+
+          const aptosResponse: Types.PendingTransaction =
+            await window.aptos.signAndSubmitTransaction(transaction);
+
+          const result = await aptosClient.waitForTransactionWithResult(aptosResponse.hash, {
+            checkSuccess: true,
+          });
+
+          setCreationHash(result.hash);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsCreatingNft(false);
+    }
+  }, [address, asset?.storage?.ipfs?.nftMetadata?.url, setIsCreatingNft]);
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Aptos NFT Minting Sample Dapp</title>
-        <meta name='description' content='Generated by create next app' />
-      </Head>
-      <div className={styles.connect}>
+    <div>
+      <div className={styles.container}>
+        <Head>
+          <title>Aptos NFT Minting Sample Dapp</title>
+          <meta name='description' content='Generated by create next app' />
+        </Head>
+        <div className={styles.connect}>
           <button
             className={styles.buttonConnect}
-            type='submit'
-            onClick={async () => {
-              await window.aptos?.connect();
-            }}
+            disabled={!isAptosDefined || Boolean(address)}
+            onClick={connectWallet}
           >
-            Connect
-            <br />
-            {isLoading && <BarLoader color='#44d8a7' />}
+            {!address ? 'Connect Wallet' : address}
           </button>
-      </div>
+        </div>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <span>Aptos</span>
-        </h1>
+        <main className={styles.main}>
+          <h1 className={styles.title}>
+            Welcome to <span>Aptos</span>
+          </h1>
 
-        <p className={styles.description}>
-          This sample application can be used to understand the video NFT minting capabilities
-          provided by LivepeerJS
-          <p className={styles.link}>
-            <a href='https://github.com/livepeer/Aptos-NFT-Dapp'>Github</a>
+          <p className={styles.description}>
+            This sample application can be used to understand the video NFT minting capabilities
+            provided by LivepeerJS
+            <p className={styles.link}>
+              <a href='https://github.com/livepeer/Aptos-NFT-Dapp'>Github</a>
+            </p>
           </p>
-        </p>
 
-        <div>
+          {asset?.playbackId && (
+            <div>
+              <p>Preview</p>
+              <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
+            </div>
+          )}
+
+          <p>Asset ID</p>
+          <input disabled value={asset?.id} />
+
+          <br />
           <div className={styles.drop} {...getRootProps()}>
             <input {...getInputProps()} />
             <div>
@@ -109,46 +202,57 @@ const Home: NextPage = () => {
               </p>
             </div>
           </div>
-
-          {error?.message && (
-            <div>
-              <span>{error.message}</span>
-            </div>
-          )}
-        </div>
-
-        <div>
-          {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
-          {progressFormatted && <p>{progressFormatted}</p>}
-        </div>
-
-        <p>
-          <button
-            className={styles.button}
-            type='submit'
-            onClick={() => {
-              if (video) {
-                createAsset({ name: video.name, file: video });
-              }
-            }}
-            disabled={!video || isLoading || Boolean(asset)}
-          >
-            Mint NFT
-            <br />
-            {isLoading && <BarLoader color='#44d8a7' />}
-          </button>
-        </p>
-
-        {asset?.playbackId && (
           <div>
-            <p>Preview</p>
-            <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
+            {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
+            {progressFormatted && <p>{progressFormatted}</p>}
           </div>
-        )}
-        {/* {metrics?.metrics?.[0] && <p>Views: {metrics?.metrics?.[0]?.startViews}</p>} */}
-      </main>
+          <br />
+          {address && (
+            <>
+              <div>
+                <button
+                  className={styles.buttonConnect}
+                  type='submit'
+                  onClick={() => {
+                    if (video) {
+                      createAsset({ name: video.name, file: video });
+                    }
+                  }}
+                  disabled={!video || isLoading || Boolean(asset)}
+                >
+                  Upload Asset
+                  <br />
+                  {isLoading && <BarLoader color='#fff' />}
+                </button>
+                {asset?.status?.phase === 'ready' && asset?.storage?.status?.phase !== 'ready' ? (
+                  <button
+                    className={styles.buttonConnect}
+                    onClick={() => {
+                      updateAsset({
+                        assetId: asset.id,
+                        storage: { ipfs: true },
+                      });
+                    }}
+                    disabled={!assetId || Boolean(asset?.storage?.ipfs?.cid)}
+                  >
+                    Upload to IPFS
+                  </button>
+                ) : creationHash ? (
+                  <a href={`https://explorer.aptoslabs.com/txn/${creationHash}?network=Devnet`}>
+                    View Mint Transaction
+                  </a>
+                ) : asset?.storage?.status?.phase === 'ready' ? (
+                  <button className={styles.buttonConnect} onClick={mintNft}>
+                    Mint NFT
+                  </button>
+                ) : (
+                  <></>
+                )}
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
-};
-
-export default Home;
+}

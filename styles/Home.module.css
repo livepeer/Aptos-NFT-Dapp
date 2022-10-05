@@ -146,6 +146,7 @@ padding: 0.5rem 1rem;
   background: #44d8a7;
   border-radius: 5px;
   border: none;
+  color: #fff;
 }
 
 .buttonConnect:hover{
