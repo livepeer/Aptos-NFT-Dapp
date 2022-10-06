@@ -2,10 +2,11 @@ import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AptosClient } from 'aptos';
 import { LivepeerConfig, createReactClient, studioProvider } from '@livepeer/react';
-import { useMemo } from 'react';
+
+import { createContext, useMemo } from 'react';
 
 
-// export const AptosContext = createContext<AptosClient | null>(null);
+export const AptosContext = createContext<AptosClient | null>(null);
 
 function MyApp( { Component, pageProps }: AppProps ) {
   const client = createReactClient({
@@ -16,11 +17,11 @@ function MyApp( { Component, pageProps }: AppProps ) {
 
 
   return (
-    // <AptosContext.Provider value={aptosClient}>
+    <AptosContext.Provider value={aptosClient}>
       <LivepeerConfig client={client}>
         <Component {...pageProps} />
       </LivepeerConfig>
-    // </AptosContext.Provider>
+     </AptosContext.Provider>
   );
 }
 

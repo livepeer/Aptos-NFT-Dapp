@@ -3,12 +3,14 @@ import { Player, useAsset, useUpdateAsset, useCreateAsset, useAssetMetrics } fro
 import { useState, useCallback, useMemo, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { useDropzone } from 'react-dropzone';
-// import { AptosContext } from '../core'
+import { AptosContext } from './_app';
 import { Types } from 'aptos';
+// import {StudioAsset} from 'livepeer/providers/studio/'
 import BarLoader from 'react-spinners/BarLoader';
 import styles from '../styles/Home.module.css';
 
 import { CreateAptosTokenBody, CreateAptosTokenResponse } from '../pages/api/create-aptos-token';
+import { LivepeerProvider } from '@livepeer/react';
 
 declare global {
   interface Window {
@@ -16,25 +18,22 @@ declare global {
   }
 }
 export default function Aptos() {
-  // const assetId = '89b4e676-ed4e-4caa-b8dc-c73050740961';
+  // const assetID = '04728ab5-65e1-458e-8def-00022bbf974b';
   const [address, setAddress] = useState<string | null>(null);
-  const [video, setVideo] = useState<string | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
   const [isCreatingNft, setIsCreatingNft] = useState(false);
   const [creationHash, setCreationHash] = useState('');
 
   const router = useRouter();
 
-  // const aptosClient = useContext( AptosContext );
+  const aptosClient = useContext( AptosContext );
 
   const isAptosDefined = useMemo(
     () => (typeof window !== 'undefined' ? Boolean(window?.aptos) : false),
     []
   );
 
-  const assetId = useMemo(
-    () => (router?.query?.id ? String(router?.query?.id) : undefined),
-    [router?.query]
-  );
+  
 
   const {
     mutate: createAsset,
@@ -43,12 +42,19 @@ export default function Aptos() {
     uploadProgress,
   } = useCreateAsset();
 
-  const { data: asset, status: assetStatus } = useAsset({
+  
+
+  const assetId = useMemo(
+    () => (router?.query?.id ? String(router?.query?.id) : undefined),
+    [router?.query]
+  );
+
+  const { data: asset, status: assetStatus } = useAsset<LivepeerProvider, any>({
     assetId,
     enabled: assetId?.length === 36,
     refetchInterval: (asset) => (asset?.storage?.status?.phase !== 'ready' ? 5000 : false),
-  });
-
+  } );
+  
   const { mutate: updateAsset, status: updateStatus } = useUpdateAsset();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -57,10 +63,6 @@ export default function Aptos() {
     }
   }, []);
 
-  const { data: metrics } = useAssetMetrics({
-    assetId: createdAsset?.id,
-    refetchInterval: 30000,
-  });
 
   const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
     accept: {
@@ -183,36 +185,36 @@ export default function Aptos() {
             </p>
           </p>
 
-          {asset?.playbackId && (
+          {/* {asset?.playbackId && (
             <div>
-              <p>Preview</p>
-              <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
+            <p>Preview</p>
+            <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
             </div>
-          )}
+          )} */}
 
-          <p>Asset ID</p>
-          <input disabled value={asset?.id} />
 
-          <br />
-          <div className={styles.drop} {...getRootProps()}>
-            <input {...getInputProps()} />
-            <div>
-              <p>
-                Drag and drop or <span>browse files</span>
-              </p>
-            </div>
-          </div>
-          <div>
-            {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
-            {progressFormatted && <p>{progressFormatted}</p>}
-          </div>
-          <br />
-          {address && (
-            <>
+          <>
+            {address && (
               <div>
+                {/* Drag/Drop file */}
+                <div className={styles.drop} {...getRootProps()}>
+                  <input {...getInputProps()} />
+                  <div>
+                    <p>
+                      Drag and drop or <span>browse files</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Upload progress */}
+                <div>
+                  {video ? <p>{video.name}</p> : <p>Select a video file to upload.</p>}
+                  {progressFormatted && <p>{progressFormatted}</p>}
+                </div>
+
+                {/* Upload video */}
                 <button
                   className={styles.buttonConnect}
-                  type='submit'
                   onClick={() => {
                     if (video) {
                       createAsset({ name: video.name, file: video });
@@ -224,6 +226,8 @@ export default function Aptos() {
                   <br />
                   {isLoading && <BarLoader color='#fff' />}
                 </button>
+                
+                {/* TODO: check asset is ready and get it */}
                 {asset?.status?.phase === 'ready' && asset?.storage?.status?.phase !== 'ready' ? (
                   <button
                     className={styles.buttonConnect}
@@ -249,8 +253,8 @@ export default function Aptos() {
                   <></>
                 )}
               </div>
-            </>
-          )}
+            )}
+          </>
         </main>
       </div>
     </div>
