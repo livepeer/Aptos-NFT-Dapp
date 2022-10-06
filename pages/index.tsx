@@ -24,14 +24,12 @@ export default function Aptos() {
 
   const router = useRouter();
 
-  const aptosClient = useContext( AptosContext );
+  const aptosClient = useContext(AptosContext);
 
   const isAptosDefined = useMemo(
     () => (typeof window !== 'undefined' ? Boolean(window?.aptos) : false),
     []
   );
-
-  
 
   const {
     mutate: createAsset,
@@ -40,13 +38,11 @@ export default function Aptos() {
     uploadProgress,
   } = useCreateAsset();
 
-  
-
   const { data: asset, status: assetStatus } = useAsset<LivepeerProvider, any>({
     assetId: createdAsset?.id,
     refetchInterval: (asset) => (asset?.storage?.status?.phase !== 'ready' ? 5000 : false),
-  } );
-  
+  });
+
   const { mutate: updateAsset, status: updateStatus } = useUpdateAsset();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -54,7 +50,6 @@ export default function Aptos() {
       setVideo(acceptedFiles[0]);
     }
   }, []);
-
 
   const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
     accept: {
@@ -147,7 +142,6 @@ export default function Aptos() {
     }
   }, [address, aptosClient, asset?.storage?.ipfs?.nftMetadata?.url, setIsCreatingNft]);
 
-
   return (
     <div>
       <div className={styles.container}>
@@ -179,14 +173,6 @@ export default function Aptos() {
             </button>
           </div>
 
-          {/* Preview Asset */}
-          {/* {asset?.playbackId && (
-            <div>
-            <p>Preview</p>
-            <Player playbackId={asset?.playbackId} autoPlay={false} muted aspectRatio='1to1' />
-            </div>
-          )} */}
-
           <>
             {address && (
               <div>
@@ -209,22 +195,22 @@ export default function Aptos() {
                 {/* Upload video */}
 
                 <div className={styles.buttonBox}>
-                  <button
-                    className={styles.button}
-                    onClick={() => {
-                      if (video) {
-                        createAsset({ name: video.name, file: video });
-                      }
-                    }}
-                    disabled={!video || isLoading || Boolean(asset)}
-                  >
-                    Upload Asset
-                    <br />
-                    {isLoading && <BarLoader color='#fff' />}
-                  </button>
-
-                  {/* Upload to IPFS/Mint */}
-                  {asset?.status?.phase === 'ready' && asset?.storage?.status?.phase !== 'ready' ? (
+                  {asset?.status?.phase !== 'ready' ? (
+                    <button
+                      className={styles.button}
+                      onClick={() => {
+                        if (video) {
+                          createAsset({ name: video.name, file: video });
+                        }
+                      }}
+                      disabled={!video || isLoading || Boolean(asset)}
+                    >
+                      Upload Asset
+                      <br />
+                      {isLoading && <BarLoader color='#fff' />}
+                    </button>
+                  ) : asset?.status?.phase === 'ready' &&
+                    asset?.storage?.status?.phase !== 'ready' ? (
                     <button
                       className={styles.button}
                       onClick={() => {
@@ -237,7 +223,6 @@ export default function Aptos() {
                     >
                       Upload to IPFS
                       <br />
-                      {isLoading && <BarLoader color='#fff' />}
                     </button>
                   ) : creationHash ? (
                     <p className={styles.link}>
@@ -246,7 +231,9 @@ export default function Aptos() {
                       </a>
                     </p>
                   ) : asset?.storage?.status?.phase === 'ready' ? (
-                    <button onClick={mintNft}>Mint NFT</button>
+                    <button className={styles.button} onClick={mintNft}>
+                      Mint NFT
+                    </button>
                   ) : (
                     <></>
                   )}
