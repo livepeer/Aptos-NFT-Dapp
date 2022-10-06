@@ -146,7 +146,7 @@ export default function Aptos() {
     } finally {
       setIsCreatingNft(false);
     }
-  }, [address, asset?.storage?.ipfs?.nftMetadata?.url, setIsCreatingNft]);
+  }, [address,aptosClient, asset?.storage?.ipfs?.nftMetadata?.url, setIsCreatingNft]);
 
   return (
     <div>
