@@ -1,7 +1,6 @@
 import Head from 'next/head';
 import { Player, useAsset, useUpdateAsset, useCreateAsset, useAssetMetrics } from '@livepeer/react';
 import { useState, useCallback, useMemo, useContext } from 'react';
-import { useRouter } from 'next/router';
 import { useDropzone } from 'react-dropzone';
 import { AptosContext } from './_app';
 import { Types } from 'aptos';
@@ -22,7 +21,6 @@ export default function Aptos() {
   const [isCreatingNft, setIsCreatingNft] = useState(false);
   const [creationHash, setCreationHash] = useState('');
 
-  const router = useRouter();
 
   const aptosClient = useContext(AptosContext);
 
@@ -51,7 +49,7 @@ export default function Aptos() {
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
+  const { getRootProps, getInputProps } = useDropzone({
     accept: {
       'video/*': ['*.mp4'],
     },
@@ -63,8 +61,9 @@ export default function Aptos() {
     () =>
       createStatus === 'loading' ||
       assetStatus === 'loading' ||
+      updateStatus === 'loading' ||
       (asset && asset?.status?.phase !== 'ready'),
-    [createStatus, asset, assetStatus]
+    [createStatus, asset, assetStatus, updateStatus]
   );
 
   const progressFormatted = useMemo(
@@ -213,16 +212,19 @@ export default function Aptos() {
                     asset?.storage?.status?.phase !== 'ready' ? (
                     <button
                       className={styles.button}
-                      onClick={() => {
-                        updateAsset({
-                          assetId: asset.id,
-                          storage: { ipfs: true },
-                        });
+                          onClick={ () => {
+                        if(asset.id){
+                          updateAsset({
+                            assetId: asset.id,
+                            storage: { ipfs: true },
+                          });
+                        }
                       }}
-                      disabled={!asset?.id || Boolean(asset?.storage?.ipfs?.cid)}
+                      disabled={!asset.id || isLoading || Boolean(asset?.storage?.ipfs?.cid)}
                     >
                       Upload to IPFS
                       <br />
+                      {isLoading && <BarLoader color='#fff' />}
                     </button>
                   ) : creationHash ? (
                     <p className={styles.link}>
@@ -232,7 +234,7 @@ export default function Aptos() {
                     </p>
                   ) : asset?.storage?.status?.phase === 'ready' ? (
                     <button className={styles.button} onClick={mintNft}>
-                      Mint NFT
+                      Mint Video NFT
                     </button>
                   ) : (
                     <></>
