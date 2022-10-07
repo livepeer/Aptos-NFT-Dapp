@@ -48,6 +48,7 @@
 .link a {
   color: #44d8a7;
   text-decoration: none;
+  margin-right: 3rem;
 }
 
 .link a:hover,
