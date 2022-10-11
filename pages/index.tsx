@@ -21,7 +21,6 @@ export default function Aptos() {
   const [isCreatingNft, setIsCreatingNft] = useState(false);
   const [creationHash, setCreationHash] = useState('');
 
-
   const aptosClient = useContext(AptosContext);
 
   const isAptosDefined = useMemo(
@@ -65,6 +64,7 @@ export default function Aptos() {
       (asset && asset?.status?.phase !== 'ready'),
     [createStatus, asset, assetStatus, updateStatus]
   );
+
 
   const progressFormatted = useMemo(
     () =>
@@ -212,8 +212,8 @@ export default function Aptos() {
                     asset?.storage?.status?.phase !== 'ready' ? (
                     <button
                       className={styles.button}
-                          onClick={ () => {
-                        if(asset.id){
+                      onClick={() => {
+                        if (asset.id) {
                           updateAsset({
                             assetId: asset.id,
                             storage: { ipfs: true },
@@ -224,7 +224,7 @@ export default function Aptos() {
                     >
                       Upload to IPFS
                       <br />
-                      {isLoading && <BarLoader color='#fff' />}
+                      { isLoading && <BarLoader color='#fff' />}
                     </button>
                   ) : creationHash ? (
                     <p className={styles.link}>
@@ -235,6 +235,8 @@ export default function Aptos() {
                   ) : asset?.storage?.status?.phase === 'ready' ? (
                     <button className={styles.button} onClick={mintNft}>
                       Mint Video NFT
+                      <br />
+                      {isCreatingNft && <BarLoader color='#fff' />}
                     </button>
                   ) : (
                     <></>
