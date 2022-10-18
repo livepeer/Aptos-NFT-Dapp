@@ -20,6 +20,7 @@ export default function Aptos() {
   const [video, setVideo] = useState<File | null>(null);
   const [isCreatingNft, setIsCreatingNft] = useState(false);
   const [creationHash, setCreationHash] = useState('');
+  const [isExportStarted, setIsExportedStarted] = useState(false);
 
   const aptosClient = useContext(AptosContext);
 
@@ -61,10 +62,10 @@ export default function Aptos() {
       createStatus === 'loading' ||
       assetStatus === 'loading' ||
       updateStatus === 'loading' ||
-      (asset && asset?.status?.phase !== 'ready'),
-    [createStatus, asset, assetStatus, updateStatus]
+      (asset && asset?.status?.phase !== 'ready') ||
+      (isExportStarted && asset?.status?.phase !== 'success'),
+    [createStatus, asset, assetStatus, updateStatus, isExportStarted]
   );
-
 
   const progressFormatted = useMemo(
     () =>
@@ -141,6 +142,7 @@ export default function Aptos() {
     }
   }, [address, aptosClient, asset?.storage?.ipfs?.nftMetadata?.url, setIsCreatingNft]);
 
+
   return (
     <div>
       <div className={styles.container}>
@@ -214,6 +216,7 @@ export default function Aptos() {
                       className={styles.button}
                       onClick={() => {
                         if (asset.id) {
+                          setIsExportedStarted(true);
                           updateAsset({
                             assetId: asset.id,
                             storage: { ipfs: true },
@@ -224,7 +227,7 @@ export default function Aptos() {
                     >
                       Upload to IPFS
                       <br />
-                      { isLoading && <BarLoader color='#fff' />}
+                      {isLoading && <BarLoader color='#fff' />}
                     </button>
                   ) : creationHash ? (
                     <p className={styles.link}>
